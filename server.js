@@ -27,7 +27,17 @@ const dataBase = {
     '25517': { type: 'для АДМ KDS200 Compact', date: '21.10.2025', note: '1 ' },
     '25518': { type: 'для АДМ KDS200 Compact', date: '21.10.2025', note: '1 ' },
     '25519': { type: 'для АДМ KDS200 Compact', date: '21.10.2025', note: '1 ' },
-    '25520': { type: 'для АДМ KDS200 Compact', date: '21.10.2025', note: '1 ' }
+    '25520': { type: 'для АДМ KDS200 Compact', date: '21.10.2025', note: '1 ' },
+
+    '25540': { type: 'для АДМ KDS200 Compact', date: 'еще не выпущена', note: ' ' },
+    '25541': { type: 'для АДМ KDS200 Compact', date: 'еще не выпущена', note: ' ' },
+    '25542': { type: 'для АДМ KDS200 Compact', date: 'еще не выпущена', note: ' ' },
+    '25543': { type: 'для АДМ KDS200 Compact', date: 'еще не выпущена', note: ' ' },
+    '25544': { type: 'для АДМ KDS200 Compact', date: 'еще не выпущена', note: ' ' },
+    '25545': { type: 'для АДМ KDS200 Compact', date: 'еще не выпущена', note: ' ' }, 
+    '25549': { type: 'для АДМ KDS200 Compact', date: 'еще не выпущена', note: ' ' },
+    '25550': { type: 'для АДМ KDS200 Compact', date: 'еще не выпущена', note: ' ' }
+
     // Добавь больше по аналогии
 };
 
