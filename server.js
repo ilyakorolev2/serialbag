@@ -4,7 +4,7 @@ const port = process.env.PORT || 415; // Берём порт из Render или 
 
 // Простые данные для теста (как база; ключ - code, значение - JSON)
 const dataBase = {
-    '202101B': { type: 'для АДМ KDS200 Standart', date: '01.01.2024', note: 'не была в ремонте' },
+    '2021001b': { type: 'для АДМ KDS200 Standart', date: '01.01.2024', note: 'не была в ремонте' },
     '12345': { type: 'для АДМ KDS200 Compact', date: '01.01.2024', note: 'была в ремонте 01.06.2025' },
     '54321': { type: 'для АДМ Panda', date: '01.01.2024', note: 'была в ремонте 06.06.2025' },
     '11111': { type: 'для АДМ KDS200 MAX', date: '01.01.2024', note: 'была в ремонте 01.01.2025' },
@@ -55,12 +55,22 @@ const dataBase = {
 
 // Маршрут: GET /data/:code — получает code из URL
 app.get('/data/:code', (req, res) => {
-    const code = req.params.code; // код из запроса
-    const data = dataBase[code]; // Ищем в "базе"
-    if (data) {
-        res.json(data); // Возвращаем JSON
+    const requestedCode = req.params.code.trim(); // Убираем лишние пробелы
+    const lowerCode = requestedCode.toLowerCase(); // Приводим к нижнему регистру
+
+    // Ищем ключ, игнорируя регистр
+    let foundKey = null;
+    for (const key in dataBase) {
+        if (key.toLowerCase() === lowerCode) {
+            foundKey = key;
+            break;
+        }
+    }
+
+    if (foundKey) {
+        res.json(dataBase[foundKey]); // Возвращаем данные по найденному ключу
     } else {
-        res.status(404).json({ error: 'Данные не найдены для кода ' + code }); // Ошибка, если нет
+        res.status(404).json({ error: 'Данные не найдены для кода ' + requestedCode }); // Ошибка, если нет
     }
 });
 
