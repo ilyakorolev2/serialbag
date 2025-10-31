@@ -1,5 +1,5 @@
 const express = require('express');
-const db = require('./db'); // Импортируем нашу базу данных
+const db = require('./db');
 
 const app = express();
 const port = process.env.PORT || 415;
@@ -14,7 +14,6 @@ app.use((req, res, next) => {
 app.get('/data/:code', (req, res) => {
     const requestedCode = req.params.code;
     
-    // Ищем данные в базе
     const result = db.findByCode(requestedCode);
     
     if (result) {
@@ -30,10 +29,24 @@ app.get('/data/:code', (req, res) => {
     }
 });
 
+// Новый маршрут: GET /stats - возвращает статистику базы данных
+app.get('/stats', (req, res) => {
+    const totalRecords = Object.keys(db.data).length;
+    
+    res.json({
+        totalRecords: totalRecords,
+        message: `В базе данных ${totalRecords} записей`,
+        lastUpdated: new Date().toISOString()
+    });
+});
+
 // Дополнительный маршрут для принудительной перезагрузки базы
 app.post('/reload-db', (req, res) => {
     db.reload();
-    res.json({ message: 'База данных перезагружена' });
+    res.json({ 
+        message: 'База данных перезагружена',
+        totalRecords: Object.keys(db.data).length
+    });
 });
 
 // Запуск сервера
