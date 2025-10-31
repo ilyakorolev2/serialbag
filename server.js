@@ -10,6 +10,14 @@ app.use((req, res, next) => {
     next();
 });
 
+// Функция для получения московского времени
+function getMoscowTime() {
+    const now = new Date();
+    const moscow_offset = 3 * 60 * 60 * 1000; // +3 часа
+    const moscow_time = new Date(now.getTime() + moscow_offset);
+    return moscow_time.toISOString();
+}
+
 // Маршрут: GET /data/:code
 app.get('/data/:code', (req, res) => {
     const requestedCode = req.params.code;
@@ -36,7 +44,8 @@ app.get('/stats', (req, res) => {
     res.json({
         totalRecords: totalRecords,
         message: `В базе данных ${totalRecords} записей`,
-        lastUpdated: new Date().toISOString()
+        lastUpdated: getMoscowTime(),
+        timezone: "MSK (GMT+3)"
     });
 });
 
@@ -45,12 +54,15 @@ app.post('/reload-db', (req, res) => {
     db.reload();
     res.json({ 
         message: 'База данных перезагружена',
-        totalRecords: Object.keys(db.data).length
+        totalRecords: Object.keys(db.data).length,
+        lastUpdated: getMoscowTime()
     });
 });
 
 // Запуск сервера
 app.listen(port, () => {
+    const startTime = getMoscowTime();
     console.log(`Сервер запущен на порту ${port}`);
+    console.log(`Время запуска (МСК): ${startTime}`);
     console.log(`База данных содержит ${Object.keys(db.data).length} записей`);
 });
