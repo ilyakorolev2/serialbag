@@ -1,12 +1,39 @@
 const xlsx = require('xlsx');
-const fs = require('fs');
 
 class Database {
     constructor() {
         this.filePath = './database.xlsx';
         this.data = {};
         this.loadData();
-        this.setupFileWatcher();
+    }
+
+    // Функция для преобразования Excel даты в нормальный формат
+    excelDateToJSDate(serial) {
+        // Если значение пустое, undefined или null, возвращаем пустую строку
+        if (serial === undefined || serial === null || serial === '') {
+            return '';
+        }
+        
+        // Если это строка (текстовое значение), возвращаем как есть
+        if (typeof serial === 'string') {
+            return serial;
+        }
+        
+        // Если это число (Excel дата), преобразуем
+        if (typeof serial === 'number') {
+            const utc_days = Math.floor(serial - 25569);
+            const utc_value = utc_days * 86400;
+            const date_info = new Date(utc_value * 1000);
+            
+            const day = date_info.getDate().toString().padStart(2, '0');
+            const month = (date_info.getMonth() + 1).toString().padStart(2, '0');
+            const year = date_info.getFullYear();
+            
+            return `${day}.${month}.${year}`;
+        }
+        
+        // Для любых других типов возвращаем как строку
+        return String(serial);
     }
 
     // Загрузка данных из Excel файла
@@ -23,9 +50,12 @@ class Database {
             this.data = {};
             jsonData.forEach(row => {
                 if (row.code) {
-                    this.data[row.code] = {
+                    // Преобразуем код в строку и убираем пробелы
+                    const code = row.code.toString().trim();
+                    
+                    this.data[code] = {
                         type: row.type || '',
-                        date: row.date || '',
+                        date: this.excelDateToJSDate(row.date),
                         note: row.note || ''
                     };
                 }
@@ -36,15 +66,6 @@ class Database {
             console.error('Ошибка загрузки базы данных:', error.message);
             this.data = {};
         }
-    }
-
-    // Настройка отслеживания изменений файла
-    setupFileWatcher() {
-        fs.watchFile(this.filePath, (curr, prev) => {
-            console.log('Обнаружено изменение в database.xlsx, перезагружаем...');
-            this.loadData();
-        });
-        console.log('Отслеживание изменений database.xlsx включено');
     }
 
     // Поиск по коду (без учета регистра)
@@ -62,7 +83,7 @@ class Database {
         return null;
     }
 
-    // Перезагрузка данных (например, после изменения Excel файла)
+    // Перезагрузка данных
     reload() {
         this.loadData();
     }
