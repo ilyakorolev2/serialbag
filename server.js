@@ -40,22 +40,25 @@ app.get('/data/:code', (req, res) => {
 // Новый маршрут: GET /stats - возвращает статистику базы данных
 app.get('/stats', (req, res) => {
     const totalRecords = Object.keys(db.data).length;
+    const lastUpdated = db.getLastUpdated();
     
     res.json({
         totalRecords: totalRecords,
         message: `В базе данных ${totalRecords} записей`,
-        lastUpdated: getMoscowTime(),
+        lastUpdated: lastUpdated,
+        currentTime: getMoscowTime(), // текущее время для сравнения
         timezone: "MSK (GMT+3)"
     });
 });
 
 // Дополнительный маршрут для принудительной перезагрузки базы
 app.post('/reload-db', (req, res) => {
-    db.reload();
+    const lastUpdated = db.reload(); // reload возвращает время обновления
+    
     res.json({ 
         message: 'База данных перезагружена',
         totalRecords: Object.keys(db.data).length,
-        lastUpdated: getMoscowTime()
+        lastUpdated: lastUpdated
     });
 });
 

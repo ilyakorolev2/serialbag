@@ -4,7 +4,16 @@ class Database {
     constructor() {
         this.filePath = './database.xlsx';
         this.data = {};
+        this.lastUpdated = null; // Добавляем поле для хранения времени обновления
         this.loadData();
+    }
+
+    // Функция для получения московского времени
+    getMoscowTime() {
+        const now = new Date();
+        const moscow_offset = 3 * 60 * 60 * 1000; // +3 часа
+        const moscow_time = new Date(now.getTime() + moscow_offset);
+        return moscow_time.toISOString();
     }
 
     // Функция для преобразования Excel даты в нормальный формат (Московское время)
@@ -68,7 +77,11 @@ class Database {
                 }
             });
             
+            // Обновляем время последнего обновления базы
+            this.lastUpdated = this.getMoscowTime();
+            
             console.log(`База данных загружена. Записей: ${Object.keys(this.data).length}`);
+            console.log(`Время обновления базы: ${this.lastUpdated}`);
         } catch (error) {
             console.error('Ошибка загрузки базы данных:', error.message);
             this.data = {};
@@ -93,6 +106,12 @@ class Database {
     // Перезагрузка данных
     reload() {
         this.loadData();
+        return this.lastUpdated;
+    }
+
+    // Получение времени последнего обновления
+    getLastUpdated() {
+        return this.lastUpdated;
     }
 }
 
