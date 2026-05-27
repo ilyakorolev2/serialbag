@@ -1,74 +1,57 @@
 const xlsx = require('xlsx');
+const path = require('path');
 
 class Database {
     constructor() {
-        this.filePath = './database.xlsx';
+        this.filePath = path.join(__dirname, 'database.xlsx');
         this.data = {};
-        this.lastUpdated = null; // Добавляем поле для хранения времени обновления
+        this.lastUpdated = null;
         this.loadData();
     }
 
-    // Функция для получения московского времени
     getMoscowTime() {
         const now = new Date();
-        const moscow_offset = 3 * 60 * 60 * 1000; // +3 часа
+        const moscow_offset = 3 * 60 * 60 * 1000;
         const moscow_time = new Date(now.getTime() + moscow_offset);
         return moscow_time.toISOString();
     }
 
-    // Функция для преобразования Excel даты в нормальный формат (Московское время)
     excelDateToJSDate(serial) {
-        // Если значение пустое, undefined или null, возвращаем пустую строку
         if (serial === undefined || serial === null || serial === '') {
             return '';
         }
-        
-        // Если это строка (текстовое значение), возвращаем как есть
+
         if (typeof serial === 'string') {
             return serial;
         }
-        
-        // Если это число (Excel дата), преобразуем с учетом московского времени
+
         if (typeof serial === 'number') {
-            // Excel дата - количество дней с 1 января 1900 года
             const utc_days = Math.floor(serial - 25569);
-            const utc_value = utc_days * 86400; // секунд в дне
-            
-            // Создаем дату в UTC
+            const utc_value = utc_days * 86400;
             const date_info = new Date(utc_value * 1000);
-            
-            // Корректируем на московское время (+3 часа)
-            const moscow_offset = 3 * 60 * 60 * 1000; // 3 часа в миллисекундах
+            const moscow_offset = 3 * 60 * 60 * 1000;
             const moscow_date = new Date(date_info.getTime() + moscow_offset);
-            
             const day = moscow_date.getDate().toString().padStart(2, '0');
             const month = (moscow_date.getMonth() + 1).toString().padStart(2, '0');
             const year = moscow_date.getFullYear();
-            
+
             return `${day}.${month}.${year}`;
         }
-        
-        // Для любых других типов возвращаем как строку
+
         return String(serial);
     }
 
-    // Загрузка данных из Excel файла
     loadData() {
         try {
             const workbook = xlsx.readFile(this.filePath);
             const sheetName = workbook.SheetNames[0];
             const worksheet = workbook.Sheets[sheetName];
-            
-            // Конвертируем Excel в JSON
-            const jsonData = xlsx.utils.sheet_to_json(worksheet);
-            
-            // Преобразуем в формат { code: { type, date, note } }
+            const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: '' });
+
             this.data = {};
             jsonData.forEach(row => {
                 if (row.code) {
-                    // Преобразуем код в строку и убираем пробелы
                     const code = row.code.toString().trim();
-                    
                     this.data[code] = {
                         type: row.type || '',
                         date: this.excelDateToJSDate(row.date),
@@ -76,10 +59,8 @@ class Database {
                     };
                 }
             });
-            
-            // Обновляем время последнего обновления базы
+
             this.lastUpdated = this.getMoscowTime();
-            
             console.log(`База данных загружена. Записей: ${Object.keys(this.data).length}`);
             console.log(`Время обновления базы: ${this.lastUpdated}`);
         } catch (error) {
@@ -88,10 +69,9 @@ class Database {
         }
     }
 
-    // Поиск по коду (без учета регистра)
     findByCode(code) {
         const searchCode = code.toString().trim().toLowerCase();
-        
+
         for (const key in this.data) {
             if (key.toLowerCase() === searchCode) {
                 return {
@@ -100,16 +80,60 @@ class Database {
                 };
             }
         }
+
         return null;
     }
 
-    // Перезагрузка данных
+    saveData() {
+        const rows = Object.keys(this.data).map(code => ({
+            code,
+            type: this.data[code].type || '',
+            date: this.data[code].date || '',
+            note: this.data[code].note || ''
+        }));
+        const worksheet = xlsx.utils.json_to_sheet(rows, {
+            header: ['code', 'type', 'date', 'note']
+        });
+        const workbook = xlsx.utils.book_new();
+
+        xlsx.utils.book_append_sheet(workbook, worksheet, 'Sheet1');
+        xlsx.writeFile(workbook, this.filePath);
+        this.lastUpdated = this.getMoscowTime();
+    }
+
+    addRecord(record) {
+        const code = (record.code || '').toString().trim();
+
+        if (!code) {
+            const error = new Error('Code is required');
+            error.code = 'INVALID_CODE';
+            throw error;
+        }
+
+        if (this.findByCode(code)) {
+            const error = new Error('Code already exists');
+            error.code = 'DUPLICATE_CODE';
+            throw error;
+        }
+
+        this.data[code] = {
+            type: (record.type || '').toString().trim(),
+            date: (record.date || '').toString().trim() || new Date().toLocaleDateString('ru-RU'),
+            note: (record.note || '').toString().trim()
+        };
+        this.saveData();
+
+        return {
+            code,
+            ...this.data[code]
+        };
+    }
+
     reload() {
         this.loadData();
         return this.lastUpdated;
     }
 
-    // Получение времени последнего обновления
     getLastUpdated() {
         return this.lastUpdated;
     }
