@@ -1,4 +1,5 @@
-const express = require('express');
+﻿const express = require('express');
+const path = require('path');
 const db = require('./db');
 
 const app = express();
@@ -27,22 +28,22 @@ app.post('/data/:code', (req, res) => {
     try {
         const record = db.addRecord({ code, type, date, note });
         res.status(201).json({
-            message: `Серийный номер ${record.code} добавлен в базу`,
+            message: `РЎРµСЂРёР№РЅС‹Р№ РЅРѕРјРµСЂ ${record.code} РґРѕР±Р°РІР»РµРЅ РІ Р±Р°Р·Сѓ`,
             record,
             totalRecords: Object.keys(db.data).length,
             lastUpdated: db.getLastUpdated()
         });
     } catch (error) {
         if (error.code === 'INVALID_CODE') {
-            return res.status(400).json({ error: 'Серийный номер не указан' });
+            return res.status(400).json({ error: 'РЎРµСЂРёР№РЅС‹Р№ РЅРѕРјРµСЂ РЅРµ СѓРєР°Р·Р°РЅ' });
         }
 
         if (error.code === 'DUPLICATE_CODE') {
-            return res.status(409).json({ error: `Серийный номер ${code} уже есть в базе` });
+            return res.status(409).json({ error: `РЎРµСЂРёР№РЅС‹Р№ РЅРѕРјРµСЂ ${code} СѓР¶Рµ РµСЃС‚СЊ РІ Р±Р°Р·Рµ` });
         }
 
-        console.error('Ошибка добавления записи:', error.message);
-        res.status(500).json({ error: 'Ошибка сервера при добавлении записи' });
+        console.error('РћС€РёР±РєР° РґРѕР±Р°РІР»РµРЅРёСЏ Р·Р°РїРёСЃРё:', error.message);
+        res.status(500).json({ error: 'РћС€РёР±РєР° СЃРµСЂРІРµСЂР° РїСЂРё РґРѕР±Р°РІР»РµРЅРёРё Р·Р°РїРёСЃРё' });
     }
 });
 
@@ -58,7 +59,7 @@ app.get('/data/:code', (req, res) => {
         });
     } else {
         res.status(404).json({
-            error: 'Данные не найдены для кода ' + requestedCode
+            error: 'Р”Р°РЅРЅС‹Рµ РЅРµ РЅР°Р№РґРµРЅС‹ РґР»СЏ РєРѕРґР° ' + requestedCode
         });
     }
 });
@@ -69,18 +70,27 @@ app.get('/stats', (req, res) => {
 
     res.json({
         totalRecords: totalRecords,
-        message: `В базе данных ${totalRecords} записей`,
+        message: `Р’ Р±Р°Р·Рµ РґР°РЅРЅС‹С… ${totalRecords} Р·Р°РїРёСЃРµР№`,
         lastUpdated: lastUpdated,
         currentTime: getMoscowTime(),
         timezone: 'MSK (GMT+3)'
     });
 });
 
+app.get('/download-db', (req, res) => {
+    const filePath = path.join(__dirname, 'database.xlsx');
+    res.download(filePath, 'database.xlsx', (error) => {
+        if (error && !res.headersSent) {
+            console.error('Database download error:', error.message);
+            res.status(500).json({ error: 'Database download failed' });
+        }
+    });
+});
 app.post('/reload-db', (req, res) => {
     const lastUpdated = db.reload();
 
     res.json({
-        message: 'База данных перезагружена',
+        message: 'Р‘Р°Р·Р° РґР°РЅРЅС‹С… РїРµСЂРµР·Р°РіСЂСѓР¶РµРЅР°',
         totalRecords: Object.keys(db.data).length,
         lastUpdated: lastUpdated
     });
@@ -88,7 +98,7 @@ app.post('/reload-db', (req, res) => {
 
 app.listen(port, () => {
     const startTime = getMoscowTime();
-    console.log(`Сервер запущен на порту ${port}`);
-    console.log(`Время запуска (МСК): ${startTime}`);
-    console.log(`База данных содержит ${Object.keys(db.data).length} записей`);
+    console.log(`РЎРµСЂРІРµСЂ Р·Р°РїСѓС‰РµРЅ РЅР° РїРѕСЂС‚Сѓ ${port}`);
+    console.log(`Р’СЂРµРјСЏ Р·Р°РїСѓСЃРєР° (РњРЎРљ): ${startTime}`);
+    console.log(`Р‘Р°Р·Р° РґР°РЅРЅС‹С… СЃРѕРґРµСЂР¶РёС‚ ${Object.keys(db.data).length} Р·Р°РїРёСЃРµР№`);
 });
