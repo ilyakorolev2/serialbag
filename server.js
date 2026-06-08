@@ -77,6 +77,17 @@ app.get('/stats', (req, res) => {
     });
 });
 
+app.get('/history', (req, res) => {
+    const requestedLimit = Number.parseInt(req.query.limit, 10);
+    const limit = Number.isFinite(requestedLimit)
+        ? Math.min(Math.max(requestedLimit, 1), 50)
+        : 5;
+
+    res.json({
+        records: db.getRecentRecords(limit)
+    });
+});
+
 app.get('/download-db', (req, res) => {
     const filePath = path.join(__dirname, 'database.xlsx');
     res.download(filePath, 'database.xlsx', (error) => {

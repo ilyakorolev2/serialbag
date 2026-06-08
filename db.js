@@ -84,6 +84,16 @@ class Database {
         return null;
     }
 
+    getRecentRecords(limit = 5) {
+        return Object.keys(this.data)
+            .slice(-limit)
+            .reverse()
+            .map(code => ({
+                code,
+                ...this.data[code]
+            }));
+    }
+
     saveData() {
         const rows = Object.keys(this.data).map(code => ({
             code,
