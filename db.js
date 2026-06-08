@@ -5,6 +5,7 @@ class Database {
     constructor() {
         this.filePath = path.join(__dirname, 'database.xlsx');
         this.data = {};
+        this.recordOrder = [];
         this.lastUpdated = null;
         this.loadData();
     }
@@ -49,14 +50,17 @@ class Database {
             const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: '' });
 
             this.data = {};
+            this.recordOrder = [];
             jsonData.forEach(row => {
                 if (row.code) {
                     const code = row.code.toString().trim();
                     this.data[code] = {
                         type: row.type || '',
                         date: this.excelDateToJSDate(row.date),
-                        note: row.note || ''
+                        note: row.note || '',
+                        createdAt: row.createdAt || ''
                     };
+                    this.recordOrder.push(code);
                 }
             });
 
@@ -85,24 +89,35 @@ class Database {
     }
 
     getRecentRecords(limit = 5) {
-        return Object.keys(this.data)
-            .slice(-limit)
-            .reverse()
-            .map(code => ({
-                code,
-                ...this.data[code]
-            }));
+        return this.recordOrder
+            .map((code, index) => {
+                const record = this.data[code];
+                let timestamp = Date.parse(record.createdAt);
+
+                if (!Number.isFinite(timestamp)) {
+                    const match = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(record.date);
+                    timestamp = match
+                        ? Date.UTC(Number(match[3]), Number(match[2]) - 1, Number(match[1]))
+                        : 0;
+                }
+
+                return { code, index, timestamp, ...record };
+            })
+            .sort((left, right) => right.timestamp - left.timestamp || right.index - left.index)
+            .slice(0, limit)
+            .map(({ index, timestamp, ...record }) => record);
     }
 
     saveData() {
-        const rows = Object.keys(this.data).map(code => ({
+        const rows = this.recordOrder.map(code => ({
             code,
             type: this.data[code].type || '',
             date: this.data[code].date || '',
-            note: this.data[code].note || ''
+            note: this.data[code].note || '',
+            createdAt: this.data[code].createdAt || ''
         }));
         const worksheet = xlsx.utils.json_to_sheet(rows, {
-            header: ['code', 'type', 'date', 'note']
+            header: ['code', 'type', 'date', 'note', 'createdAt']
         });
         const workbook = xlsx.utils.book_new();
 
@@ -129,8 +144,10 @@ class Database {
         this.data[code] = {
             type: (record.type || '').toString().trim(),
             date: (record.date || '').toString().trim() || new Date().toLocaleDateString('ru-RU'),
-            note: (record.note || '').toString().trim()
+            note: (record.note || '').toString().trim(),
+            createdAt: this.getMoscowTime()
         };
+        this.recordOrder.push(code);
         this.saveData();
 
         return {
