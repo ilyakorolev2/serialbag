@@ -156,6 +156,19 @@ class Database {
         };
     }
 
+    deleteRecord(code) {
+        const record = this.findByCode(code);
+
+        if (!record) {
+            return false;
+        }
+
+        delete this.data[record.code];
+        this.recordOrder = this.recordOrder.filter(item => item !== record.code);
+        this.saveData();
+        return true;
+    }
+
     reload() {
         this.loadData();
         return this.lastUpdated;

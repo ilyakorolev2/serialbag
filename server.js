@@ -64,6 +64,25 @@ app.get('/data/:code', (req, res) => {
     }
 });
 
+app.delete('/data/:code', (req, res) => {
+    const adminPassword = process.env.ADMIN_PASSWORD || '5555';
+
+    if (req.get('x-admin-password') !== adminPassword) {
+        return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const code = req.params.code.toString().trim();
+    if (!db.deleteRecord(code)) {
+        return res.status(404).json({ error: `Serial number ${code} not found` });
+    }
+
+    res.json({
+        message: `Serial number ${code} deleted`,
+        totalRecords: Object.keys(db.data).length,
+        lastUpdated: db.getLastUpdated()
+    });
+});
+
 app.get('/stats', (req, res) => {
     const totalRecords = Object.keys(db.data).length;
     const lastUpdated = db.getLastUpdated();
